@@ -7,28 +7,26 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     :root {
-      --pk1: #fdf0f5;
-      --pk2: #f9d0e3;
-      --pk3: #f4a8c9;
-      --pk4: #e8729e;
-      --pk5: #c94d7a;
-      --pk-text: #7a1f48;
-      --pk-muted: #b5607e;
+      --pk1: #fdf0f5; --pk2: #f9d0e3; --pk3: #f4a8c9;
+      --pk4: #e8729e; --pk5: #c94d7a;
+      --pk-text: #7a1f48; --pk-muted: #b5607e;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; background: var(--pk1); color: var(--pk-text); }
     header { background: var(--pk4); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
     header h1 { font-size: 1.3rem; }
     #total-muatan { background: white; color: var(--pk5); font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 0.9rem; }
+    #user-info { background: white; color: var(--pk5); font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 0.9rem; display: flex; gap: 10px; align-items: center; }
+    #btn-logout { background: var(--pk5); color: white; border: none; padding: 4px 10px; border-radius: 10px; cursor: pointer; font-size: 0.8rem; }
     main { max-width: 900px; margin: 30px auto; padding: 0 16px; }
     h2 { margin-bottom: 12px; color: var(--pk5); }
-    #form-section { background: white; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 0.5px solid var(--pk2); }
+    .section-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 0.5px solid var(--pk2); }
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 0.88rem; color: var(--pk-muted); }
     .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid var(--pk3); border-radius: 8px; font-size: 0.95rem; background: var(--pk1); color: var(--pk-text); }
     .error-msg { color: var(--pk4); font-size: 0.82rem; margin-top: 4px; display: none; }
-    button[type="submit"] { background: var(--pk4); color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
-    button[type="submit"]:hover { background: var(--pk5); }
+    .btn-pink { background: var(--pk4); color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+    .btn-pink:hover { background: var(--pk5); }
     #container-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
     .card { background: white; border-radius: 12px; padding: 16px; border: 0.5px solid var(--pk2); border-left: 5px solid var(--pk3); }
     .card.archived { border-left-color: #ddd; opacity: 0.7; }
@@ -40,46 +38,73 @@
     .card-actions { display: flex; gap: 8px; margin-top: 12px; }
     .btn-archive { background: #fde8b0; color: #a0720a; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; }
     .btn-delete { background: var(--pk2); color: var(--pk5); border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; }
+    #login-section { max-width: 400px; margin: 80px auto; }
+    #dashboard-section { display: none; }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>WowoClean — Sistem Logistik Limbah B3</h1>
-  <div id="total-muatan">Total Muatan: 0 kg</div>
-</header>
-
-<main>
-
-  <section id="form-section">
-    <h2>Tambah Kontainer</h2>
+<!-- LOGIN -->
+<div id="login-section">
+  <div class="section-box">
+    <h2>Login WowoClean</h2>
+    <br>
     <div class="form-group">
-      <label>Container ID</label>
-      <input type="text" id="input-id" placeholder="Contoh: AB00004" />
-      <div class="error-msg" id="err-id"></div>
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@wowoclean.com" />
     </div>
     <div class="form-group">
-      <label>Waste Type</label>
-      <select id="input-type">
-        <option value="Chemical">Chemical</option>
-        <option value="Organic">Organic</option>
-        <option value="Radioactive">Radioactive</option>
-      </select>
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" />
     </div>
-    <div class="form-group">
-      <label>Weight (kg)</label>
-      <input type="number" id="input-weight" placeholder="10 - 5000" />
-      <div class="error-msg" id="err-weight"></div>
+    <div class="error-msg" id="login-error">Email atau password salah!</div>
+    <button class="btn-pink" onclick="login()">Login</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard-section">
+  <header>
+    <h1>WowoClean — Sistem Logistik Limbah B3</h1>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <div id="total-muatan">Total Muatan: 0 kg</div>
+      <div id="user-info">
+        <span id="user-name"></span>
+        <button id="btn-logout" onclick="logout()">Logout</button>
+      </div>
     </div>
-    <button type="submit" onclick="createContainer()">Simpan Kontainer</button>
-  </section>
+  </header>
 
-  <section>
-    <h2>Daftar Kontainer</h2>
-    <div id="container-list">Memuat data...</div>
-  </section>
+  <main>
+    <section class="section-box" id="form-section">
+      <h2>Tambah Kontainer</h2>
+      <div class="form-group">
+        <label>Container ID</label>
+        <input type="text" id="input-id" placeholder="Contoh: AB00004" />
+        <div class="error-msg" id="err-id"></div>
+      </div>
+      <div class="form-group">
+        <label>Waste Type</label>
+        <select id="input-type">
+          <option value="Chemical">Chemical</option>
+          <option value="Organic">Organic</option>
+          <option value="Radioactive">Radioactive</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Weight (kg)</label>
+        <input type="number" id="input-weight" placeholder="10 - 5000" />
+        <div class="error-msg" id="err-weight"></div>
+      </div>
+      <button class="btn-pink" onclick="createContainer()">Simpan Kontainer</button>
+    </section>
 
-</main>
+    <section>
+      <h2>Daftar Kontainer</h2>
+      <div id="container-list">Memuat data...</div>
+    </section>
+  </main>
+</div>
 
 <script src="app.js"></script>
 </body>

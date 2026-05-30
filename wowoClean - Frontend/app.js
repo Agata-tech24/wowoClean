@@ -1,16 +1,57 @@
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+  baseURL: 'http://127.0.0.1:8000/api/v1',
+  headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
 });
 
+let token = null;
+let userRole = null;
 let localContainers = [];
 
+// ====== LOGIN ======
+async function login() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  try {
+    const res = await api.post('/login', { email, password });
+    token = res.data.token;
+    userRole = res.data.role;
+
+    document.getElementById('user-name').textContent = res.data.name + ' (' + userRole + ')';
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('dashboard-section').style.display = 'block';
+
+    // Sembunyikan form tambah kalau bukan admin
+    if (userRole !== 'admin') {
+      document.getElementById('form-section').style.display = 'none';
+    }
+
+    loadContainers();
+  } catch (err) {
+    const el = document.getElementById('login-error');
+    el.style.display = 'block';
+  }
+}
+
+// ====== LOGOUT ======
+async function logout() {
+  try {
+    await api.post('/logout', {}, { headers: { Authorization: `Bearer ${token}` } });
+  } catch (err) {}
+  token = null;
+  userRole = null;
+  localContainers = [];
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('dashboard-section').style.display = 'none';
+  document.getElementById('form-section').style.display = 'block';
+}
+
+// ====== LOAD CONTAINERS ======
 async function loadContainers() {
   try {
-    const res = await api.get('/containers');
+    const res = await api.get('/gateway/containers', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     localContainers = res.data;
     renderContainers(localContainers);
   } catch (err) {
@@ -18,6 +59,7 @@ async function loadContainers() {
   }
 }
 
+// ====== RENDER ======
 function renderContainers(containers) {
   const total = containers.reduce((sum, c) => sum + c.weight_kg, 0);
   document.getElementById('total-muatan').textContent = `Total Muatan: ${total} kg`;
@@ -35,13 +77,14 @@ function renderContainers(containers) {
       <p><strong>Tipe:</strong> ${c.waste_type}</p>
       <p><strong>Berat:</strong> ${c.weight_kg} kg</p>
       <div class="card-actions">
-        ${c.status === 'Active' ? `<button class="btn-archive" onclick="archiveContainer('${c.container_id}')">Archive</button>` : ''}
-        <button class="btn-delete" onclick="deleteContainer('${c.container_id}')">Hapus</button>
+        ${userRole === 'admin' && c.status === 'Active' ? `<button class="btn-archive" onclick="archiveContainer('${c.container_id}')">Archive</button>` : ''}
+        ${userRole === 'admin' ? `<button class="btn-delete" onclick="deleteContainer('${c.container_id}')">Hapus</button>` : ''}
       </div>
     </div>
   `).join('');
 }
 
+// ====== CREATE ======
 async function createContainer() {
   document.getElementById('err-id').style.display = 'none';
   document.getElementById('err-weight').style.display = 'none';
@@ -53,7 +96,9 @@ async function createContainer() {
   };
 
   try {
-    const res = await api.post('/containers', data);
+    const res = await api.post('/gateway/containers', data, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     localContainers.push(res.data);
     renderContainers(localContainers);
     alert('Kontainer berhasil ditambahkan!');
@@ -74,9 +119,12 @@ async function createContainer() {
   }
 }
 
+// ====== ARCHIVE ======
 async function archiveContainer(id) {
   try {
-    await api.patch(`/containers/${id}`, { status: 'Archived' });
+    await api.patch(`/gateway/containers/${id}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     const c = localContainers.find(c => c.container_id === id);
     if (c) c.status = 'Archived';
     renderContainers(localContainers);
@@ -85,15 +133,16 @@ async function archiveContainer(id) {
   }
 }
 
+// ====== DELETE ======
 async function deleteContainer(id) {
   if (!confirm(`Yakin ingin menghapus kontainer ${id}?`)) return;
   try {
-    await api.delete(`/containers/${id}`);
+    await api.delete(`/gateway/containers/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     localContainers = localContainers.filter(c => c.container_id !== id);
     renderContainers(localContainers);
   } catch (err) {
     alert('Gagal menghapus kontainer.');
   }
 }
-
-loadContainers();
